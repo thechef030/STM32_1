@@ -14,34 +14,200 @@
     "stm32cube-ide-clangd.path": "cube",
     "stm32cube-ide-clangd.arguments": [
       "starm-clangd",
-      "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
-      "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
+      "--query-driver=C:/Users/tjgus/stm32_lab/.tools/bin/arm-none-eabi-gcc*",
+      "--compile-commands-dir=${workspaceFolder}/build/Debug"
     ],
-    "cmake.cmakePath": "cube-cmake",
-    "cmake.configureArgs": [
-      "-DCMAKE_COMMAND=cube-cmake"
-    ],
+    "cmake.cmakePath": "C:/Users/tjgus/stm32_lab/.tools/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+    "cmake.configureArgs": [],
     "cmake.preferredGenerators": [
       "Ninja"
     ],
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json"
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json",
+    "cmake.useCMakePresets": "always",
+    "cmake.configureOnOpen": true,
+    "files.exclude": {
+      "**/.tools": true
+    },
+    "files.watcherExclude": {
+      "**/.tools/**": true
+    },
+    "search.exclude": {
+      "**/.tools": true
+    }
   },
   "launch": {
     "version": "0.2.0",
     "configurations": [
       {
-        "type": "stlinkgdbtarget",
+        "type": "cppdbg",
         "request": "launch",
-        "name": "STM32Cube: Launch ST-Link GDB Server",
-        "origin": "snippet",
+        "name": "STM32_1 과제 3: 인터럽트 LED",
         "cwd": "${workspaceFolder}",
-        "preBuild": "${command:st-stm32-ide-debug-launch.build}",
-        "runEntry": "main",
-        "imagesAndSymbols": [
+        "preLaunchTask": "STM32: Build Task 3",
+        "program": "${workspaceFolder}/build/Debug/ece2_474.elf",
+        "MIMode": "gdb",
+        "targetArchitecture": "arm",
+        "miDebuggerPath": "C:/Users/tjgus/stm32_lab/.tools/bin/arm-none-eabi-gdb.exe",
+        "debugServerPath": "C:/Users/tjgus/stm32_lab/.tools/bundles/stlink-gdbserver/7.14.0+st.2/bin/ST-LINK_gdbserver.exe",
+        "debugServerArgs": "-p 3333 -z 3334 -d -k -cp \"C:/Users/tjgus/stm32_lab/.tools/bundles/programmer/2.23.0/bin\"",
+        "serverStarted": "Waiting for debugger connection",
+        "serverLaunchTimeout": 30000,
+        "filterStdout": true,
+        "filterStderr": true,
+        "externalConsole": false,
+        "stopAtEntry": false,
+        "customLaunchSetupCommands": [
           {
-            "imageFileName": "${command:st-stm32-ide-debug-launch.get-projects-binary-from-context1}"
+            "text": "-file-exec-and-symbols \"C:/Users/tjgus/stm32_1/build/Debug/ece2_474.elf\"",
+            "description": "Load firmware executable and debug symbols"
+          },
+          {
+            "text": "-target-select remote localhost:3333",
+            "description": "Connect to ST-LINK"
+          },
+          {
+            "text": "-interpreter-exec console \"monitor reset\"",
+            "description": "Reset target"
+          },
+          {
+            "text": "-target-download",
+            "description": "Download firmware"
+          },
+          {
+            "text": "-interpreter-exec console \"monitor reset\"",
+            "description": "Reset after download"
+          },
+          {
+            "text": "-break-insert -t main",
+            "description": "Stop at main"
           }
-        ]
+        ],
+        "launchCompleteCommand": "exec-continue"
+      },
+      {
+        "type": "cppdbg",
+        "request": "launch",
+        "name": "STM32_1 과제 4: PWM (PB4)",
+        "cwd": "${workspaceFolder}",
+        "preLaunchTask": "STM32: Build Task 4",
+        "program": "${workspaceFolder}/build/PWM/ece2_474.elf",
+        "MIMode": "gdb",
+        "targetArchitecture": "arm",
+        "miDebuggerPath": "C:/Users/tjgus/stm32_lab/.tools/bin/arm-none-eabi-gdb.exe",
+        "debugServerPath": "C:/Users/tjgus/stm32_lab/.tools/bundles/stlink-gdbserver/7.14.0+st.2/bin/ST-LINK_gdbserver.exe",
+        "debugServerArgs": "-p 3333 -z 3334 -d -k -cp \"C:/Users/tjgus/stm32_lab/.tools/bundles/programmer/2.23.0/bin\"",
+        "serverStarted": "Waiting for debugger connection",
+        "serverLaunchTimeout": 30000,
+        "filterStdout": true,
+        "filterStderr": true,
+        "externalConsole": false,
+        "stopAtEntry": false,
+        "customLaunchSetupCommands": [
+          {
+            "text": "-file-exec-and-symbols \"C:/Users/tjgus/stm32_1/build/PWM/ece2_474.elf\"",
+            "description": "Load firmware executable and debug symbols"
+          },
+          {
+            "text": "-target-select remote localhost:3333",
+            "description": "Connect to ST-LINK"
+          },
+          {
+            "text": "-interpreter-exec console \"monitor reset\"",
+            "description": "Reset target"
+          },
+          {
+            "text": "-target-download",
+            "description": "Download firmware"
+          },
+          {
+            "text": "-interpreter-exec console \"monitor reset\"",
+            "description": "Reset after download"
+          },
+          {
+            "text": "-break-insert -t main",
+            "description": "Stop at main"
+          }
+        ],
+        "launchCompleteCommand": "exec-continue"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "STM32: Configure Task 3",
+        "type": "process",
+        "command": "C:/Users/tjgus/stm32_lab/.tools/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+        "args": [
+          "--preset",
+          "Debug"
+        ],
+        "options": {
+          "cwd": "C:/Users/tjgus/stm32_1"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STM32: Build Task 3",
+        "type": "process",
+        "command": "C:/Users/tjgus/stm32_lab/.tools/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+        "args": [
+          "--build",
+          "--preset",
+          "Debug",
+          "--parallel",
+          "4"
+        ],
+        "options": {
+          "cwd": "C:/Users/tjgus/stm32_1"
+        },
+        "problemMatcher": [
+          "$gcc"
+        ],
+        "dependsOn": "STM32: Configure Task 3",
+        "dependsOrder": "sequence",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      },
+      {
+        "label": "STM32: Configure Task 4",
+        "type": "process",
+        "command": "C:/Users/tjgus/stm32_lab/.tools/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+        "args": [
+          "--preset",
+          "PWM"
+        ],
+        "options": {
+          "cwd": "C:/Users/tjgus/stm32_1"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STM32: Build Task 4",
+        "type": "process",
+        "command": "C:/Users/tjgus/stm32_lab/.tools/bundles/cmake/4.4.0+st.1/bin/cmake.exe",
+        "args": [
+          "--build",
+          "--preset",
+          "PWM",
+          "--parallel",
+          "4"
+        ],
+        "options": {
+          "cwd": "C:/Users/tjgus/stm32_1"
+        },
+        "problemMatcher": [
+          "$gcc"
+        ],
+        "dependsOn": "STM32: Configure Task 4",
+        "dependsOrder": "sequence",
+        "group": {
+          "kind": "build",
+          "isDefault": false
+        }
       }
     ]
   }

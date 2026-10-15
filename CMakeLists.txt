@@ -59,6 +59,14 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
 )
 
+# STM32_1 과제 3과 4는 서로 다른 실행 파일로 빌드합니다.
+set(STM32_1_TASK "3" CACHE STRING "STM32_1 assignment: 3 or 4")
+set_property(CACHE STM32_1_TASK PROPERTY STRINGS 3 4)
+if(NOT STM32_1_TASK MATCHES "^[34]$")
+    message(FATAL_ERROR "STM32_1_TASK must be 3 or 4")
+endif()
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE STM32_1_TASK=${STM32_1_TASK})
+
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 

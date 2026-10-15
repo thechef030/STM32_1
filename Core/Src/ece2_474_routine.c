@@ -9,6 +9,26 @@
 #include "main.h"
 /* 주변장치 변수의 extern 선언은 ece2_474.h에 있습니다. */
 
+/* Debug 프리셋: 과제 3, PWM 프리셋: 과제 4. 두 과제는 따로 실행합니다. */
+#ifndef STM32_1_TASK
+#define STM32_1_TASK 3
+#endif
+#if STM32_1_TASK != 3 && STM32_1_TASK != 4
+#error "STM32_1_TASK must be 3 or 4"
+#endif
+
+/* VS Code Watch에서 이름을 입력하여 확인할 수 있는 상태 변수입니다. */
+volatile uint32_t blink_interval_ms = 1000U;
+volatile uint32_t tim6_count = 0U;
+volatile uint32_t tim6_irq_count = 0U;
+volatile uint32_t led_toggle_count = 0U;
+volatile uint32_t pwm_percent = 25U;
+volatile uint32_t pwm_compare = 250U;
+volatile uint32_t button_press_count = 0U;
+
+static uint32_t last_press_ms = 0U;
+static uint32_t press_seen = 0U;
+
 /* UART 인터럽트 수신 실습 때 필요한 버퍼의 주석을 해제합니다.
  * 파일 범위에 두면 수신 완료 함수에서도 같은 버퍼를 사용할 수 있습니다.
  */
@@ -18,40 +38,39 @@
 /* 주변장치 초기화가 끝난 뒤, 메인 루프에 들어가기 전에 한 번 호출됩니다. */
 void ece2_474_init(void)
 {
-    /* 필요한 기능만 주석을 해제합니다. 기본 핀·통신 설정은 이미 끝난 상태입니다.
-     * VS Code에서 해당 줄에 커서를 놓거나 여러 줄을 선택하고 Ctrl + /를 누르면
-     * 줄 주석(//)을 해제하거나 다시 설정할 수 있습니다.
-     */
+    blink_interval_ms = 1000U;
+    tim6_count = 0U;
+    tim6_irq_count = 0U;
+    led_toggle_count = 0U;
+    pwm_percent = 25U;
+    pwm_compare = 250U;
+    button_press_count = 0U;
+    last_press_ms = 0U;
+    press_seen = 0U;
+    HAL_GPIO_WritePin(LED_ece2_GPIO_Port, LED_ece2_Pin, GPIO_PIN_RESET);
 
-    /* TIM6: 100 ms마다 tim6_isr_p4()를 호출합니다. */
-    // HAL_TIM_Base_Start_IT(&htim6);
-
-    /* TIM3: PB4에서 1 kHz PWM을 출력합니다. 비교값 500은 50%입니다. */
-    // HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-    // __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 500U);
-
-    /* UART2: PC에서 한 바이트를 받으면 uart2_isr_p6()를 호출합니다.
-     * 위의 uart2_rx_ece2 버퍼도 주석을 해제해야 합니다.
-     * 수신 완료 함수에서 HAL_UART_Receive_IT를 다시 호출해야 다음 입력도 받습니다.
-     * getchar·fgets·scanf로 같은 UART를 읽는 방식과 함께 사용하지 않습니다.
-     */
-    // HAL_UART_Receive_IT(&huart2, &uart2_rx_ece2, 1U);
-
-    /* UART3: FPGA에서 한 바이트를 받으면 uart3_isr_p5()를 호출합니다.
-     * 위의 uart3_rx_ece2 버퍼도 주석을 해제해야 합니다.
-     * UART는 한 번 수신한 뒤, 수신 완료 함수에서 다시 수신을 요청합니다.
-     */
-    // HAL_UART_Receive_IT(&huart3, &uart3_rx_ece2, 1U);
-
-    /* GPIO 입력 인터럽트는 이미 켜져 있어 별도 시작 호출이 필요 없습니다.
-     * SPI·I2C와 UART 송신도 별도 시작 없이 필요한 시점에 송수신 함수를 호출합니다.
-     */
+#if STM32_1_TASK == 3
+    /* 초기화 과정에서 생긴 갱신 플래그를 지워 첫 주기도 100 ms가 되게 합니다. */
+    __HAL_TIM_SET_COUNTER(&htim6, 0U);
+    __HAL_TIM_CLEAR_FLAG(&htim6, TIM_FLAG_UPDATE);
+    if (HAL_TIM_Base_Start_IT(&htim6) != HAL_OK)
+    {
+        Error_Handler();
+    }
+#else
+    /* ARR=999: 한 주기 1000칸. PWM을 시작하기 전에 25%로 설정합니다. */
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwm_compare);
+    if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+#endif
 }
 
 /* 메인 루프에서 반복해서 호출됩니다. */
 void polling_routine(void)
 {
-    /* 실습 코드 작성 */
+    /* 과제 3과 4 모두 인터럽트로 처리하므로 폴링 코드는 비워 둡니다. */
 }
 
 /* 1. 사용자 버튼 PC13을 눌렀을 때 호출됩니다. 우선순위: 7.
@@ -59,7 +78,37 @@ void polling_routine(void)
  */
 static void button_isr_p7(void)
 {
-    /* 실습 코드 작성: 버튼 이벤트를 기록하거나 LED 상태를 변경합니다. */
+    uint32_t now_ms = HAL_GetTick();
+
+    /* 첫 누름은 바로 인정하고, 이후 200 ms 이내의 반복 에지는 무시합니다.
+     * PC13은 상승 에지 인터럽트이므로 계속 누르고 있어도 반복 처리하지 않습니다.
+     * unsigned 뺄셈을 사용하여 HAL_GetTick의 오버플로도 처리합니다.
+     */
+    if (press_seen != 0U && (uint32_t)(now_ms - last_press_ms) < 200U)
+    {
+        return;
+    }
+    press_seen = 1U;
+    last_press_ms = now_ms;
+    ++button_press_count;
+
+#if STM32_1_TASK == 3
+    /* TIM6(우선순위 4)가 버튼 ISR(7)을 선점할 수 있습니다.
+     * 간격 변경과 횟수 초기화 사이에 TIM6가 끼어들지 않게 짧게 보호합니다.
+     * volatile만으로는 이 두 연산의 동시성을 보장할 수 없습니다.
+     */
+    uint32_t saved_primask = __get_PRIMASK();
+    __disable_irq();
+    blink_interval_ms = (blink_interval_ms >= 8000U)
+                        ? 1000U : blink_interval_ms * 2U;
+    tim6_count = 0U;
+    __set_PRIMASK(saved_primask);
+#else
+    /* 이 줄에 F9 중단점: F10으로 pwm_percent와 CCR1의 변화를 확인합니다. */
+    pwm_percent = (pwm_percent >= 75U) ? 25U : pwm_percent + 25U;
+    pwm_compare = pwm_percent * 10U;
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwm_compare);
+#endif
 }
 
 /* 2. TIM6를 인터럽트 방식으로 시작하면 100 ms마다 호출됩니다. 우선순위: 4.
@@ -67,7 +116,17 @@ static void button_isr_p7(void)
  */
 static void tim6_isr_p4(void)
 {
-    /* 실습 코드 작성: 횟수를 세거나 메인 루프에서 처리할 표시를 남깁니다. */
+#if STM32_1_TASK == 3
+    ++tim6_irq_count;
+    ++tim6_count;
+    /* TIM6 1회=100 ms. 10/20/40/80회마다 LED 상태를 바꿉니다. */
+    if (tim6_count >= blink_interval_ms / 100U)
+    {
+        tim6_count = 0U;
+        HAL_GPIO_TogglePin(LED_ece2_GPIO_Port, LED_ece2_Pin);
+        ++led_toggle_count;
+    }
+#endif
 }
 
 /* 3. PC 통신 UART2의 요청한 수신이 완료되면 호출됩니다. 우선순위: 6.

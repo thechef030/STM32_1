@@ -1,38 +1,49 @@
 {
-    "version": 3,
-    "configurePresets": [
-        {
-            "name": "default",
-            "hidden": true,
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-		    "toolchainFile": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake",
-            "cacheVariables": {
-            }
-        },
-        {
-            "name": "Debug",
-            "inherits": "default",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "Release",
-            "inherits": "default",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "Debug",
-            "configurePreset": "Debug"
-        },
-        {
-            "name": "Release",
-            "configurePreset": "Release"
-        }
-    ]
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "default",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake",
+      "cacheVariables": {
+        "CMAKE_MAKE_PROGRAM": "C:/Users/tjgus/stm32_lab/.tools/bundles/ninja/1.13.2+st.1/bin/ninja.exe"
+      },
+      "environment": {
+        "PATH": "C:/Users/tjgus/stm32_lab/.tools/bin;C:/Users/tjgus/stm32_lab/.tools/bundles/ninja/1.13.2+st.1/bin;$penv{PATH}",
+        "CUBE_BUNDLE_PATH": "C:/Users/tjgus/stm32_lab/.tools/bundles",
+        "CUBE_CACHE_PATH": "${sourceDir}/build/tool-cache",
+        "CUBE_LOG_PATH": "${sourceDir}/build/tool-logs"
+      }
+    },
+    {
+      "name": "Debug",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "STM32_1_TASK": "3"
+      },
+      "displayName": "Task 3 - Interrupt LED"
+    },
+    {
+      "name": "PWM",
+      "displayName": "Task 4 - PWM and C Debugger",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "STM32_1_TASK": "4"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Debug",
+      "configurePreset": "Debug"
+    },
+    {
+      "name": "PWM",
+      "configurePreset": "PWM"
+    }
+  ]
 }
